@@ -16,7 +16,7 @@
           <a class="nav-link" routerLink="/equipos" routerLinkActive="active">Inventario</a>
         </li>
         
-        <!-- Pestañas exclusivas para ADMIN -->
+        <!-- Esto es solo exclusivo si es que se inicia con adm-->
         @if (rol() === 'ADMIN') {
           <li class="nav-item">
             <a class="nav-link" routerLink="/configuracion" routerLinkActive="active">Empresas y Usuarios</a>
