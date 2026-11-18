@@ -1,0 +1,43 @@
+.navbar {
+  background-color: #173b70; /* Azul corporativo del login */
+  padding: 12px 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #173b70;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.navbar-brand span {
+  color: white;
+  font-size: 1.15rem;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 500;
+  margin: 0 10px;
+  transition: color 0.3s ease;
+
+  &:hover, &.active {
+    color: #ffffff !important;
+    border-bottom: 2px solid #ffffff;
+  }
+}
+
+/* Modificamos el ícono hamburguesa para que se vea en fondo oscuro */
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.navbar-toggler-icon {
+  filter: invert(1);
+}

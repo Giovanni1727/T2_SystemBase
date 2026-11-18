@@ -1,0 +1,60 @@
+
+<div class="login-container">
+  <div class="login-card">
+
+    <div class="brand">
+      <div class="brand-icon">SB</div>
+      <h1>SystemBase <span>PE</span></h1>
+      <p>Gestión inteligente de equipos TI</p>
+    </div>
+
+    <div class="login-heading">
+      <h2>Bienvenido</h2>
+      <p>Ingresa tus credenciales para continuar.</p>
+    </div>
+
+    <form (ngSubmit)="iniciarSesion()">
+
+      <div class="mb-3">
+        <label for="correo" class="form-label">Correo electrónico</label>
+        <input
+          id="correo"
+          type="email"
+          class="form-control"
+          name="correo"
+          [(ngModel)]="correo"
+          placeholder="usuario@empresa.com"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Ingresa tu contraseña"
+          required
+        />
+      </div>
+
+      <div class="message" [hidden]="!mensaje">
+        {{ mensaje }}
+      </div>
+
+      <button type="submit" class="btn btn-login w-100">
+        Iniciar sesión
+      </button>
+
+    </form>
+
+    <div class="login-footer">
+      <p>SystemBase PE © 2026</p>
+      <small>Sistema de gestión y control de equipos TI</small>
+    </div>
+
+  </div>
+</div>

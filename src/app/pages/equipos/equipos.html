@@ -1,0 +1,250 @@
+<app-navar></app-navar>
+
+<div class="container-fluid px-4 mt-4">
+  
+ 
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold" style="color: #172b4d;">Inventario de Equipos TI</h2>
+    
+    @if (rol() === 'ADMIN') {
+      <button class="btn btn-primary px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEquipo" (click)="abrirModalCrear()" style="background-color: #2874c8; border: none;">
+        + Nuevo Equipo
+      </button>
+    }
+  </div>
+
+  
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-center">
+        
+        
+        <div class="col-md-5">
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Buscar por número de serie..." 
+            [ngModel]="terminoBusqueda()" 
+            (ngModelChange)="terminoBusqueda.set($event); paginaActual.set(1)"
+          >
+        </div>
+
+        
+        @if (rol() === 'ADMIN') {
+          <div class="col-md-4">
+            <select 
+              class="form-select" 
+              [ngModel]="empresaFiltro()" 
+              (ngModelChange)="empresaFiltro.set($event); paginaActual.set(1)"
+            >
+              <option value="">Todas las empresas</option>
+              @for (emp of empresas(); track emp.id) {
+                <option [value]="emp.id">{{ emp.nombre }} (RUC: {{ emp.ruc }})</option>
+              }
+            </select>
+          </div>
+        }
+
+        
+        <div class="col-md-3 text-md-end">
+          <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
+            Limpiar Filtros
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Serie</th>
+            <th>Tipo</th>
+            <th>Modelo</th>
+            <th>Empresa Propietaria</th>
+            <th>Detalles Específicos</th>
+            @if (rol() === 'ADMIN') {
+              <th class="text-end pe-4">Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (equipo of equiposFiltrados(); track equipo.id) {
+            <tr>
+              <td class="ps-4 fw-bold">{{ equipo.serie }}</td>
+              <td><span class="badge bg-primary">{{ equipo.tipo }}</span></td>
+              <td>{{ equipo.modelo }}</td>
+              <td>{{ equipo.empresa?.nombre }}</td>
+              <td>
+                <small class="text-muted">
+                  @if (equipo.procesador) { <strong>Proc:</strong> {{ equipo.procesador }} | }
+                  @if (equipo.ram) { <strong>RAM:</strong> {{ equipo.ram }} | }
+                  @if (equipo.disco) { <strong>Disco:</strong> {{ equipo.disco }} | }
+                  @if (equipo.tamano) { <strong>Tamaño:</strong> {{ equipo.tamano }} | }
+                  @if (equipo.compatibilidad) { <strong>Compat:</strong> {{ equipo.compatibilidad }} | }
+                  @if (equipo.interfaz) { <strong>Interfaz:</strong> {{ equipo.interfaz }} }
+                </small>
+              </td>
+              
+              @if (rol() === 'ADMIN') {
+                <td class="text-end pe-4">
+                  <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#modalEquipo" (click)="abrirModalEditar(equipo)">Editar</button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="eliminarEquipo(equipo.serie)">Eliminar</button>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td [colSpan]="rol() === 'ADMIN' ? 6 : 5" class="text-center py-5 text-muted">
+                No hay equipos registrados o no coinciden con los filtros aplicados.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    
+    
+    <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+      <span class="text-muted small ps-2">
+        Página {{ paginaActual() }} de {{ totalPaginas() }}
+      </span>
+      
+      <div class="btn-group pe-2">
+        <button class="btn btn-outline-secondary btn-sm" (click)="irAPagina(1)" [disabled]="paginaActual() === 1">1</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="cambiarPagina(-1)" [disabled]="paginaActual() === 1">Anterior</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="cambiarPagina(1)" [disabled]="paginaActual() === totalPaginas()">Siguiente</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="irAPagina(totalPaginas())" [disabled]="paginaActual() === totalPaginas()">Final</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+
+<div class="modal fade" id="modalEquipo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #173b70; color: white;">
+        <h5 class="modal-title fw-bold">{{ esEdicion() ? 'Editar Equipo' : 'Registrar Nuevo Equipo' }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body">
+        <form (ngSubmit)="guardarEquipo()">
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Número de Serie</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.serie" name="serie" placeholder="Ej. SN-998822" maxlength="30" [disabled]="esEdicion()" required>
+              @if (esEdicion()) {
+                <small class="text-muted">El número de serie no se puede modificar.</small>
+              }
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Tipo de Equipo</label>
+              <select class="form-select" [(ngModel)]="nuevoEquipo.tipo" name="tipo" required>
+                <option value="Laptop">Laptop</option>
+                <option value="Desktop">Desktop</option>
+                <option value="Impresora">Impresora</option>
+                <option value="Escaner">Escáner</option>
+                <option value="Pistola">Pistola Escáner</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Modelo (Máx. 100)</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.modelo" name="modelo" placeholder="Ej. Dell Latitude 5430" maxlength="100" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-semibold">Empresa Propietaria</label>
+              <select class="form-select" [(ngModel)]="nuevoEquipo.empresa.id" name="empresaId" required>
+                <option [ngValue]="null" disabled>Selecciona una empresa...</option>
+                @for (emp of empresas(); track emp.id) {
+                  <option [ngValue]="emp.id">{{ emp.nombre }} (RUC: {{ emp.ruc }})</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="text-primary fw-bold mb-3">Campos Específicos</h6>
+
+          
+          @if (nuevoEquipo.tipo === 'Laptop' || nuevoEquipo.tipo === 'Desktop') {
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Procesador (Máx. 30)</label>
+                <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.procesador" name="procesador" placeholder="Ej. Intel Core i5-1235U" maxlength="30">
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Memoria RAM</label>
+                <select class="form-select" [(ngModel)]="nuevoEquipo.ram" name="ram">
+                  <option value="" disabled selected>Selecciona RAM...</option>
+                  <option value="8GB">8GB</option>
+                  <option value="16GB">16GB</option>
+                  <option value="32GB">32GB</option>
+                  <option value="64GB">64GB</option>
+                </select>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Disco</label>
+                <select class="form-select" [(ngModel)]="nuevoEquipo.disco" name="disco">
+                  <option value="" disabled selected>Selecciona capacidad...</option>
+                  <option value="512GB">512GB</option>
+                  <option value="1TB">1TB</option>
+                  <option value="2TB">2TB</option>
+                  <option value="4TB">4TB</option>
+                </select>
+              </div>
+
+              @if (nuevoEquipo.tipo === 'Laptop') {
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Tamaño de Pantalla (Máx. 30)</label>
+                  <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.tamano" name="tamano" placeholder="Ej. 14 pulgadas" maxlength="30">
+                </div>
+              }
+            </div>
+          }
+
+          
+          @if (nuevoEquipo.tipo === 'Impresora' || nuevoEquipo.tipo === 'Escaner' || nuevoEquipo.tipo === 'Pistola') {
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Compatibilidad (Máx. 30)</label>
+                <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.compatibilidad" name="compatibilidad" placeholder="Ej. Windows / Linux" maxlength="30">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Interfaz de Conexión (Máx. 30)</label>
+                <input type="text" class="form-control" [(ngModel)]="nuevoEquipo.interfaz" name="interfaz" placeholder="Ej. USB / RJ45 / Bluetooth" maxlength="30">
+              </div>
+            </div>
+          }
+
+          @if (mensajeModal()) {
+            <div class="alert alert-danger py-2 small">{{ mensajeModal() }}</div>
+          }
+
+          <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" style="background-color: #2874c8; border: none;">
+              {{ esEdicion() ? 'Guardar Cambios' : 'Guardar Equipo' }}
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>

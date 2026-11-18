@@ -1,0 +1,138 @@
+<app-navar></app-navar>
+
+<div class="container-fluid px-4 mt-4">
+  <h2 class="fw-bold mb-4" style="color: #172b4d;">Módulo de Configuración y Empresas</h2>
+
+  <div class="row">
+    
+    
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0 fw-bold text-primary">Registrar y Ver Empresas</h5>
+        </div>
+        <div class="card-body">
+          
+          <form (ngSubmit)="guardarEmpresa()" class="mb-4">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Nombre de la Empresa</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevaEmpresa.nombre" name="nombreEmpresa" placeholder="Ej. SystemBase S.A.C." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">RUC</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevaEmpresa.ruc" name="rucEmpresa" placeholder="20123456789" maxlength="11" required>
+            </div>
+            
+            @if (mensajeEmpresa()) {
+              <div class="alert alert-info py-2 small">{{ mensajeEmpresa() }}</div>
+            }
+
+            <button type="submit" class="btn btn-primary w-100" style="background-color: #2874c8; border: none;">Guardar Empresa</button>
+          </form>
+
+          <hr>
+
+          <h6 class="fw-bold text-secondary mb-3">Empresas en el Sistema</h6>
+          <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>RUC</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (emp of empresas(); track emp.id) {
+                  <tr>
+                    <td>{{ emp.id }}</td>
+                    <td>{{ emp.nombre }}</td>
+                    <td>{{ emp.ruc }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-3">No hay empresas registradas.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0 fw-bold text-primary">Gestión de Usuarios Clientes</h5>
+        </div>
+        <div class="card-body">
+          
+         
+          <form (ngSubmit)="guardarUsuarioCliente()" class="mb-4">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Correo Electrónico</label>
+              <input type="email" class="form-control" [(ngModel)]="nuevoUsuario.correo" name="correoUsuario" placeholder="cliente@empresa.com" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Contraseña</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoUsuario.password" name="passUsuario" placeholder="Contraseña asignada" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Asignar Empresa Propietaria</label>
+              <select class="form-select" [(ngModel)]="nuevoUsuario.empresa.id" name="empresaSelect" required>
+                <option [ngValue]="null" disabled>Seleccione una empresa...</option>
+                @for (emp of empresas(); track emp.id) {
+                  <option [ngValue]="emp.id">{{ emp.nombre }} (RUC: {{ emp.ruc }})</option>
+                }
+              </select>
+            </div>
+
+            @if (mensajeUsuario()) {
+              <div class="alert alert-info py-2 small">{{ mensajeUsuario() }}</div>
+            }
+
+            <button type="submit" class="btn w-100 mt-2 text-white" style="background-color: #173b70; border: none;">Registrar Usuario Cliente</button>
+          </form>
+
+          <hr>
+
+          
+          <h6 class="fw-bold text-secondary mb-3">Usuarios Registrados en el Sistema</h6>
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Correo (Usuario)</th>
+                  <th>Contraseña</th>
+                  <th>Rol</th>
+                  <th>Empresa</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (usu of usuarios(); track usu.id) {
+                  <tr>
+                    <td class="small">{{ usu.correo }}</td>
+                    <td class="small font-monospace text-danger fw-bold">{{ usu.password }}</td>
+                    <td><span class="badge bg-secondary">{{ usu.rol }}</span></td>
+                    <td class="small">{{ usu.empresa?.nombre || 'N/A' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-3">No hay usuarios registrados.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
