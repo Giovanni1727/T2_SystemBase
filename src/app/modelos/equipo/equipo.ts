@@ -13,4 +13,7 @@ export interface Equipo {
     tamano?: string;
     compatibilidad?: string;
     interfaz?: string;
+
+    fechaInicioAlquiler?: string | null;
+    mesesAlquiler?: number | null;
 }

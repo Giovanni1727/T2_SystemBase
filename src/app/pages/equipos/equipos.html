@@ -2,7 +2,6 @@
 
 <div class="container-fluid px-4 mt-4">
   
- 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold" style="color: #172b4d;">Inventario de Equipos TI</h2>
     
@@ -13,11 +12,9 @@
     }
   </div>
 
-  
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
       <div class="row g-3 align-items-center">
-        
         
         <div class="col-md-5">
           <input 
@@ -29,7 +26,6 @@
           >
         </div>
 
-        
         @if (rol() === 'ADMIN') {
           <div class="col-md-4">
             <select 
@@ -45,7 +41,6 @@
           </div>
         }
 
-        
         <div class="col-md-3 text-md-end">
           <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
             Limpiar Filtros
@@ -56,7 +51,6 @@
     </div>
   </div>
 
-  
   <div class="card shadow-sm border-0">
     <div class="card-body p-0 table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -66,6 +60,7 @@
             <th>Tipo</th>
             <th>Modelo</th>
             <th>Empresa Propietaria</th>
+            <th>Tiempo alquiler</th>
             <th>Detalles Específicos</th>
             @if (rol() === 'ADMIN') {
               <th class="text-end pe-4">Acciones</th>
@@ -79,6 +74,10 @@
               <td><span class="badge bg-primary">{{ equipo.tipo }}</span></td>
               <td>{{ equipo.modelo }}</td>
               <td>{{ equipo.empresa?.nombre }}</td>
+              <td>
+                @let infoAlquiler = obtenerInfoAlquiler(equipo);
+                <span class="badge {{ infoAlquiler.clase }}">{{ infoAlquiler.texto }}</span>
+              </td>
               <td>
                 <small class="text-muted">
                   @if (equipo.procesador) { <strong>Proc:</strong> {{ equipo.procesador }} | }
@@ -99,7 +98,7 @@
             </tr>
           } @empty {
             <tr>
-              <td [colSpan]="rol() === 'ADMIN' ? 6 : 5" class="text-center py-5 text-muted">
+              <td [colSpan]="rol() === 'ADMIN' ? 7 : 6" class="text-center py-5 text-muted">
                 No hay equipos registrados o no coinciden con los filtros aplicados.
               </td>
             </tr>
@@ -107,7 +106,6 @@
         </tbody>
       </table>
     </div>
-    
     
     <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
       <span class="text-muted small ps-2">
@@ -124,7 +122,6 @@
   </div>
   
 </div>
-
 
 <div class="modal fade" id="modalEquipo" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -167,7 +164,7 @@
             <div class="col-md-6 mb-3">
               <label class="form-label fw-semibold">Empresa Propietaria</label>
               <select class="form-select" [(ngModel)]="nuevoEquipo.empresa.id" name="empresaId" required>
-                <option [ngValue]="null" disabled>Selecciona una empresa...</option>
+                <option [ngValue]="0" disabled>Selecciona una empresa...</option>
                 @for (emp of empresas(); track emp.id) {
                   <option [ngValue]="emp.id">{{ emp.nombre }} (RUC: {{ emp.ruc }})</option>
                 }
@@ -175,10 +172,22 @@
             </div>
           </div>
 
+          @if (nuevoEquipo.empresa.id && !esEmpresaSystemBase(nuevoEquipo.empresa.id)) {
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-semibold">Fecha de Inicio de Alquiler</label>
+                <input type="date" class="form-control" [(ngModel)]="nuevoEquipo.fechaInicioAlquiler" name="fechaInicioAlquiler" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-semibold">Duración del Alquiler (Meses)</label>
+                <input type="number" class="form-control" [(ngModel)]="nuevoEquipo.mesesAlquiler" name="mesesAlquiler" min="1" max="60" placeholder="Ej. 2" required>
+              </div>
+            </div>
+          }
+
           <hr class="my-3">
           <h6 class="text-primary fw-bold mb-3">Campos Específicos</h6>
 
-          
           @if (nuevoEquipo.tipo === 'Laptop' || nuevoEquipo.tipo === 'Desktop') {
             <div class="row">
               <div class="col-md-6 mb-3">
@@ -217,7 +226,6 @@
             </div>
           }
 
-          
           @if (nuevoEquipo.tipo === 'Impresora' || nuevoEquipo.tipo === 'Escaner' || nuevoEquipo.tipo === 'Pistola') {
             <div class="row">
               <div class="col-md-6 mb-3">

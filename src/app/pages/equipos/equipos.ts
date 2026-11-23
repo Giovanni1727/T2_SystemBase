@@ -20,23 +20,18 @@ export class Equipos implements OnInit {
   private authService = inject(AuthService);
   private configService = inject(ConfiguracionService);
 
-  
   rol = signal<string>('');
   equipos = signal<Equipo[]>([]);
   empresas = signal<Empresa[]>([]);
   terminoBusqueda = signal<string>('');
-  
-  
   empresaFiltro = signal<number | ''>('');
 
   mensajeModal = signal<string>('');
   esEdicion = signal<boolean>(false);
-  
-  
+
   paginaActual = signal<number>(1);
   itemsPorPagina = 20;
 
-  
   nuevoEquipo: Equipo = {
     serie: '',
     tipo: 'Laptop',
@@ -47,25 +42,24 @@ export class Equipos implements OnInit {
     disco: '',
     tamano: '',
     compatibilidad: '',
-    interfaz: ''
+    interfaz: '',
+    fechaInicioAlquiler: this.obtenerFechaHoy(),
+    mesesAlquiler: 1
   };
 
-  
   equiposFiltrados = computed(() => {
     const busqueda = this.terminoBusqueda().toLowerCase();
     const idEmpresaSel = this.empresaFiltro();
     let filtrados = this.equipos();
-    
-    
+
     if (idEmpresaSel !== '') {
       filtrados = filtrados.filter(e => e.empresa?.id === Number(idEmpresaSel));
     }
 
-    
     if (busqueda) {
       filtrados = filtrados.filter(e => e.serie.toLowerCase().includes(busqueda));
     }
-    
+
     const inicio = (this.paginaActual() - 1) * this.itemsPorPagina;
     const fin = inicio + this.itemsPorPagina;
     return filtrados.slice(inicio, fin);
@@ -111,7 +105,51 @@ export class Equipos implements OnInit {
     }
   }
 
-  
+  obtenerFechaHoy(): string {
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = String(hoy.getMonth() + 1).padStart(2, '0');
+    const day = String(hoy.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  esEmpresaSystemBase(empresaId: number | null | undefined): boolean {
+    if (!empresaId) return false;
+    const emp = this.empresas().find(e => e.id === Number(empresaId));
+    return emp?.ruc === '00000000000';
+  }
+
+  obtenerInfoAlquiler(eq: Equipo): { texto: string; clase: string } {
+    if (!eq.empresa || eq.empresa.ruc === '00000000000') {
+      return { texto: 'Disponible para alquiler', clase: 'bg-success' };
+    }
+
+    if (!eq.fechaInicioAlquiler || !eq.mesesAlquiler) {
+      return { texto: 'Sin plazo definido', clase: 'bg-secondary' };
+    }
+
+    const [anio, mes, dia] = eq.fechaInicioAlquiler.split('-').map(Number);
+    const fechaFin = new Date(anio, (mes - 1) + Number(eq.mesesAlquiler), dia);
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    fechaFin.setHours(0, 0, 0, 0);
+
+    const diffMs = fechaFin.getTime() - hoy.getTime();
+    const diasRestantes = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diasRestantes < 0) {
+      return { texto: `Vencido (hace ${Math.abs(diasRestantes)} días)`, clase: 'bg-danger' };
+    }
+    if (diasRestantes === 0) {
+      return { texto: 'Vence hoy', clase: 'bg-warning text-dark' };
+    }
+    if (diasRestantes <= 5) {
+      return { texto: `${diasRestantes} días (Por vencer)`, clase: 'bg-warning text-dark' };
+    }
+    return { texto: `${diasRestantes} días (${eq.mesesAlquiler} mes/es)`, clase: 'bg-primary' };
+  }
+
   limpiarFiltros() {
     this.terminoBusqueda.set('');
     this.empresaFiltro.set('');
@@ -131,16 +169,20 @@ export class Equipos implements OnInit {
       disco: '',
       tamano: '',
       compatibilidad: '',
-      interfaz: ''
+      interfaz: '',
+      fechaInicioAlquiler: this.obtenerFechaHoy(),
+      mesesAlquiler: 1
     };
   }
 
   abrirModalEditar(equipo: Equipo) {
     this.esEdicion.set(true);
     this.mensajeModal.set('');
-    this.nuevoEquipo = { 
-      ...equipo, 
-      empresa: { ...equipo.empresa } 
+    this.nuevoEquipo = {
+      ...equipo,
+      empresa: { ...equipo.empresa },
+      fechaInicioAlquiler: equipo.fechaInicioAlquiler || this.obtenerFechaHoy(),
+      mesesAlquiler: equipo.mesesAlquiler ?? 1
     };
   }
 
@@ -148,6 +190,14 @@ export class Equipos implements OnInit {
     this.mensajeModal.set('');
     if (!this.nuevoEquipo.serie || !this.nuevoEquipo.modelo || !this.nuevoEquipo.empresa.id) {
       this.mensajeModal.set('Por favor completa la Serie, el Modelo y la Empresa.');
+      return;
+    }
+
+    if (this.esEmpresaSystemBase(this.nuevoEquipo.empresa.id)) {
+      this.nuevoEquipo.fechaInicioAlquiler = null;
+      this.nuevoEquipo.mesesAlquiler = null;
+    } else if (!this.nuevoEquipo.fechaInicioAlquiler || !this.nuevoEquipo.mesesAlquiler || this.nuevoEquipo.mesesAlquiler < 1) {
+      this.mensajeModal.set('Indica la fecha de inicio y los meses de alquiler para la empresa cliente.');
       return;
     }
 
