@@ -7,6 +7,9 @@ import { AuthService } from '../../servicios/auth.service/auth.service';
 import { ConfiguracionService } from '../../servicios/configuracion.service/configuracion.service';
 import { Equipo } from '../../modelos/equipo/equipo';
 import { Empresa } from '../../modelos/empresa/empresa';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-equipos',
@@ -78,6 +81,21 @@ export class Equipos implements OnInit {
     }
 
     return Math.ceil(filtrados.length / this.itemsPorPagina) || 1;
+  });
+
+  equiposParaExportar = computed(() => {
+    const busqueda = this.terminoBusqueda().toLowerCase().trim();
+    const idEmpresaSel = this.empresaFiltro();
+    let filtrados = this.equipos();
+
+    if (idEmpresaSel !== '') {
+      filtrados = filtrados.filter(e => e.empresa?.id === Number(idEmpresaSel));
+    }
+    if (busqueda) {
+      filtrados = filtrados.filter(e => e.serie.toLowerCase().includes(busqueda));
+    }
+
+    return filtrados;
   });
 
   ngOnInit() {
@@ -244,5 +262,103 @@ export class Equipos implements OnInit {
 
   irAPagina(pagina: number) {
     this.paginaActual.set(pagina);
+  }
+
+  private obtenerDetallesTexto(eq: Equipo): string {
+    const partes: string[] = [];
+    if (eq.procesador) partes.push(`Proc: ${eq.procesador}`);
+    if (eq.ram) partes.push(`RAM: ${eq.ram}`);
+    if (eq.disco) partes.push(`Disco: ${eq.disco}`);
+    if (eq.tamano) partes.push(`Tamaño: ${eq.tamano}`);
+    if (eq.compatibilidad) partes.push(`Compat: ${eq.compatibilidad}`);
+    if (eq.interfaz) partes.push(`Interfaz: ${eq.interfaz}`);
+    return partes.join(' | ');
+  }
+
+  private obtenerEtiquetaEmpresaFiltro(): string {
+    const idSel = this.empresaFiltro();
+    if (idSel === '') {
+      return 'Todas_las_empresas';
+    }
+    const emp = this.empresas().find(e => e.id === Number(idSel));
+    return (emp?.nombre || `Empresa_${idSel}`).replace(/\s+/g, '_');
+  }
+
+  private obtenerNombreArchivoExport(extension: 'xlsx' | 'pdf'): string {
+    const empresaSlug = this.obtenerEtiquetaEmpresaFiltro();
+    const fecha = new Date().toISOString().slice(0, 10);
+    return `Inventario_SystemBase_${empresaSlug}_${fecha}.${extension}`;
+  }
+
+  exportarExcel(): void {
+    const lista = this.equiposParaExportar();
+    if (lista.length === 0) {
+      alert('No hay equipos visibles con los filtros actuales para exportar.');
+      return;
+    }
+
+    const filas = lista.map(eq => ({
+      'Serie': eq.serie,
+      'Tipo': eq.tipo,
+      'Modelo': eq.modelo,
+      'Empresa Propietaria': eq.empresa?.nombre || '',
+      'Tiempo alquiler': this.obtenerInfoAlquiler(eq).texto,
+      'Detalles Específicos': this.obtenerDetallesTexto(eq)
+    }));
+
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    hoja['!cols'] = [
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 28 },
+      { wch: 50 }
+    ];
+
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, 'Inventario');
+    XLSX.writeFile(libro, this.obtenerNombreArchivoExport('xlsx'));
+  }
+
+  exportarPDF(): void {
+    const lista = this.equiposParaExportar();
+    if (lista.length === 0) {
+      alert('No hay equipos visibles con los filtros actuales para exportar.');
+      return;
+    }
+
+    const idSel = this.empresaFiltro();
+    const nombreEmpresa = idSel === ''
+      ? 'Todas las empresas'
+      : (this.empresas().find(e => e.id === Number(idSel))?.nombre || 'Empresa seleccionada');
+    const fechaHoy = new Date().toLocaleDateString('es-PE');
+
+    const doc = new jsPDF({ orientation: 'landscape' });
+
+    doc.setFontSize(14);
+    doc.text('Inventario de Equipos TI - SystemBase PE', 14, 15);
+
+    doc.setFontSize(10);
+    doc.setTextColor(90);
+    doc.text(`Empresa: ${nombreEmpresa}   |   Fecha: ${fechaHoy}   |   Equipos: ${lista.length}`, 14, 22);
+
+    autoTable(doc, {
+      startY: 27,
+      head: [['Serie', 'Tipo', 'Modelo', 'Empresa Propietaria', 'Tiempo alquiler', 'Detalles Específicos']],
+      body: lista.map(eq => [
+        eq.serie,
+        eq.tipo,
+        eq.modelo,
+        eq.empresa?.nombre || '',
+        this.obtenerInfoAlquiler(eq).texto,
+        this.obtenerDetallesTexto(eq)
+      ]),
+      styles: { fontSize: 8.5, cellPadding: 3 },
+      headStyles: { fillColor: [23, 59, 112], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
+
+    doc.save(this.obtenerNombreArchivoExport('pdf'));
   }
 }

@@ -112,6 +112,24 @@
         Página {{ paginaActual() }} de {{ totalPaginas() }}
       </span>
       
+      <div class="d-flex align-items-center gap-3 pe-2">
+        <div class="btn-group" role="group" aria-label="Exportar inventario">
+          <button
+            type="button"
+            class="btn btn-outline-success btn-sm"
+            (click)="exportarExcel()"
+            [disabled]="equiposParaExportar().length === 0">
+            Exportar Excel
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm"
+            (click)="exportarPDF()"
+            [disabled]="equiposParaExportar().length === 0">
+            Exportar PDF
+          </button>
+
+
       <div class="btn-group pe-2">
         <button class="btn btn-outline-secondary btn-sm" (click)="irAPagina(1)" [disabled]="paginaActual() === 1">1</button>
         <button class="btn btn-outline-secondary btn-sm" (click)="cambiarPagina(-1)" [disabled]="paginaActual() === 1">Anterior</button>
