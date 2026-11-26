@@ -190,15 +190,27 @@
             </div>
           </div>
 
-          @if (nuevoEquipo.empresa.id && !esEmpresaSystemBase(nuevoEquipo.empresa.id)) {
+         @if (nuevoEquipo.empresa.id && !esEmpresaSystemBase(nuevoEquipo.empresa.id)) {
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label fw-semibold">Fecha de Inicio de Alquiler</label>
-                <input type="date" class="form-control" [(ngModel)]="nuevoEquipo.fechaInicioAlquiler" name="fechaInicioAlquiler" required>
+                <input
+                  type="date"
+                  class="form-control"
+                  [(ngModel)]="nuevoEquipo.fechaInicioAlquiler"
+                  name="fechaInicioAlquiler"
+                  required
+                >
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Duración del Alquiler (Meses)</label>
-                <input type="number" class="form-control" [(ngModel)]="nuevoEquipo.mesesAlquiler" name="mesesAlquiler" min="1" max="60" placeholder="Ej. 2" required>
+                <label class="form-label fw-semibold">Fecha de Fin de Alquiler</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  [(ngModel)]="nuevoEquipo.fechaFinAlquiler"
+                  name="fechaFinAlquiler"
+                  required
+                >
               </div>
             </div>
           }

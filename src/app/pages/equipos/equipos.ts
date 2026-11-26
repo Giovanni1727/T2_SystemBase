@@ -47,6 +47,7 @@ export class Equipos implements OnInit {
     compatibilidad: '',
     interfaz: '',
     fechaInicioAlquiler: this.obtenerFechaHoy(),
+    fechaFinAlquiler: this.obtenerFechaMasMeses(this.obtenerFechaHoy(), 1),
     mesesAlquiler: 1
   };
 
@@ -131,6 +132,15 @@ export class Equipos implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
+  obtenerFechaMasMeses(fechaBase: string, meses: number): string {
+    const [anio, mes, dia] = fechaBase.split('-').map(Number);
+    const fecha = new Date(anio, (mes - 1) + meses, dia);
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   esEmpresaSystemBase(empresaId: number | null | undefined): boolean {
     if (!empresaId) return false;
     const emp = this.empresas().find(e => e.id === Number(empresaId));
@@ -142,12 +152,19 @@ export class Equipos implements OnInit {
       return { texto: 'Disponible para alquiler', clase: 'bg-success' };
     }
 
-    if (!eq.fechaInicioAlquiler || !eq.mesesAlquiler) {
-      return { texto: 'Sin plazo definido', clase: 'bg-secondary' };
+    let fechaFin: Date | null = null;
+
+    if (eq.fechaFinAlquiler) {
+      const [anio, mes, dia] = eq.fechaFinAlquiler.split('-').map(Number);
+      fechaFin = new Date(anio, mes - 1, dia);
+    } else if (eq.fechaInicioAlquiler && eq.mesesAlquiler) {
+      const [anio, mes, dia] = eq.fechaInicioAlquiler.split('-').map(Number);
+      fechaFin = new Date(anio, (mes - 1) + Number(eq.mesesAlquiler), dia);
     }
 
-    const [anio, mes, dia] = eq.fechaInicioAlquiler.split('-').map(Number);
-    const fechaFin = new Date(anio, (mes - 1) + Number(eq.mesesAlquiler), dia);
+    if (!fechaFin) {
+      return { texto: 'Sin plazo definido', clase: 'bg-secondary' };
+    }
 
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -165,7 +182,7 @@ export class Equipos implements OnInit {
     if (diasRestantes <= 5) {
       return { texto: `${diasRestantes} días (Por vencer)`, clase: 'bg-warning text-dark' };
     }
-    return { texto: `${diasRestantes} días (${eq.mesesAlquiler} mes/es)`, clase: 'bg-primary' };
+    return { texto: `${diasRestantes} días restantes`, clase: 'bg-primary' };
   }
 
   limpiarFiltros() {
@@ -177,6 +194,7 @@ export class Equipos implements OnInit {
   abrirModalCrear() {
     this.esEdicion.set(false);
     this.mensajeModal.set('');
+    const hoy = this.obtenerFechaHoy();
     this.nuevoEquipo = {
       serie: '',
       tipo: 'Laptop',
@@ -188,7 +206,8 @@ export class Equipos implements OnInit {
       tamano: '',
       compatibilidad: '',
       interfaz: '',
-      fechaInicioAlquiler: this.obtenerFechaHoy(),
+      fechaInicioAlquiler: hoy,
+      fechaFinAlquiler: this.obtenerFechaMasMeses(hoy, 1),
       mesesAlquiler: 1
     };
   }
@@ -196,10 +215,15 @@ export class Equipos implements OnInit {
   abrirModalEditar(equipo: Equipo) {
     this.esEdicion.set(true);
     this.mensajeModal.set('');
+    const fechaInicio = equipo.fechaInicioAlquiler || this.obtenerFechaHoy();
+    const fechaFin = equipo.fechaFinAlquiler
+      || (equipo.mesesAlquiler ? this.obtenerFechaMasMeses(fechaInicio, equipo.mesesAlquiler) : this.obtenerFechaMasMeses(fechaInicio, 1));
+
     this.nuevoEquipo = {
       ...equipo,
       empresa: { ...equipo.empresa },
-      fechaInicioAlquiler: equipo.fechaInicioAlquiler || this.obtenerFechaHoy(),
+      fechaInicioAlquiler: fechaInicio,
+      fechaFinAlquiler: fechaFin,
       mesesAlquiler: equipo.mesesAlquiler ?? 1
     };
   }
@@ -213,10 +237,17 @@ export class Equipos implements OnInit {
 
     if (this.esEmpresaSystemBase(this.nuevoEquipo.empresa.id)) {
       this.nuevoEquipo.fechaInicioAlquiler = null;
+      this.nuevoEquipo.fechaFinAlquiler = null;
       this.nuevoEquipo.mesesAlquiler = null;
-    } else if (!this.nuevoEquipo.fechaInicioAlquiler || !this.nuevoEquipo.mesesAlquiler || this.nuevoEquipo.mesesAlquiler < 1) {
-      this.mensajeModal.set('Indica la fecha de inicio y los meses de alquiler para la empresa cliente.');
-      return;
+    } else {
+      if (!this.nuevoEquipo.fechaInicioAlquiler || !this.nuevoEquipo.fechaFinAlquiler) {
+        this.mensajeModal.set('Indica la fecha de inicio y la fecha de fin de alquiler.');
+        return;
+      }
+      if (this.nuevoEquipo.fechaFinAlquiler < this.nuevoEquipo.fechaInicioAlquiler) {
+        this.mensajeModal.set('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        return;
+      }
     }
 
     if (this.esEdicion() && this.nuevoEquipo.id) {
@@ -236,11 +267,13 @@ export class Equipos implements OnInit {
     this.cargarDatos();
     const modalEl = document.getElementById('modalEquipo');
     if (modalEl) {
-      document.body.classList.remove('modal-open');
-      const backdrop = document.getElementsByClassName('modal-backdrop')[0];
-      if (backdrop) backdrop.remove();
-      modalEl.classList.remove('show');
-      modalEl.style.display = 'none';
+      const bs = (window as any).bootstrap;
+      if (bs?.Modal) {
+        const instancia = bs.Modal.getInstance(modalEl) || bs.Modal.getOrCreateInstance(modalEl);
+        instancia.hide();
+        return;
+      }
+
     }
   }
 

@@ -15,5 +15,6 @@ export interface Equipo {
     interfaz?: string;
 
     fechaInicioAlquiler?: string | null;
+    fechaFinAlquiler?: string | null;
     mesesAlquiler?: number | null;
 }
